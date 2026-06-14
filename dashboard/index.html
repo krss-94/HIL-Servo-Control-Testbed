@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HIL Servo Control Testbed · ECE Capstone</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap');
+
+  :root {
+    --bg:          #050810;
+    --bg2:         #080d18;
+    --surface:     #0d1424;
+    --surface2:    #111b2e;
+    --border:      #1a2a45;
+    --border2:     #243550;
+    --accent:      #00d4ff;
+    --accent2:     #7b5ea7;
+    --accent3:     #00ff88;
+    --accent4:     #ff6b35;
+    --text:        #e8edf5;
+    --text2:       #8ba0bb;
+    --text3:       #4a6080;
+    --mono:        'JetBrains Mono', monospace;
+    --sans:        'Space Grotesk', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ── NOISE TEXTURE OVERLAY ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0; opacity: 0.4;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    position: relative;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center; padding: 2rem;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridShift 20s linear infinite;
+  }
+
+  @keyframes gridShift {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(60px); }
+  }
+
+  .hero-glow {
+    position: absolute;
+    width: 800px; height: 800px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(0,212,255,0.06) 0%, transparent 70%);
+    top: 50%; left: 50%; transform: translate(-50%, -60%);
+    animation: glowPulse 4s ease-in-out infinite;
+  }
+
+  @keyframes glowPulse {
+    0%, 100% { opacity: 0.6; transform: translate(-50%, -60%) scale(1); }
+    50%       { opacity: 1;   transform: translate(-50%, -60%) scale(1.1); }
+  }
+
+  .hero-content { position: relative; z-index: 1; max-width: 900px; }
+
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.15em;
+    color: var(--accent); text-transform: uppercase;
+    border: 1px solid rgba(0,212,255,0.3);
+    padding: 6px 16px; border-radius: 999px;
+    margin-bottom: 2rem;
+    background: rgba(0,212,255,0.05);
+    animation: fadeSlideUp 0.8s ease forwards;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    animation: blink 1.5s ease-in-out infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+  .hero-title {
+    font-size: clamp(2.8rem, 7vw, 5.5rem);
+    font-weight: 700; line-height: 1.05;
+    letter-spacing: -0.03em;
+    margin-bottom: 1.5rem;
+    animation: fadeSlideUp 0.8s ease 0.1s both;
+  }
+
+  .hero-title .line1 { display: block; color: var(--text); }
+  .hero-title .line2 {
+    display: block;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 50%, var(--accent3) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+
+  .hero-subtitle {
+    font-size: 1.15rem; color: var(--text2); max-width: 680px; margin: 0 auto 2.5rem;
+    font-weight: 400; line-height: 1.7;
+    animation: fadeSlideUp 0.8s ease 0.2s both;
+  }
+
+  .hero-badges {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+    margin-bottom: 3rem;
+    animation: fadeSlideUp 0.8s ease 0.3s both;
+  }
+
+  .badge {
+    font-family: var(--mono); font-size: 0.72rem;
+    padding: 5px 14px; border-radius: 999px;
+    border: 1px solid; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .badge-blue   { border-color: rgba(0,212,255,0.4); color: var(--accent);  background: rgba(0,212,255,0.06); }
+  .badge-purple { border-color: rgba(123,94,167,0.4); color: var(--accent2); background: rgba(123,94,167,0.06); }
+  .badge-green  { border-color: rgba(0,255,136,0.4); color: var(--accent3); background: rgba(0,255,136,0.06); }
+  .badge-orange { border-color: rgba(255,107,53,0.4); color: var(--accent4); background: rgba(255,107,53,0.06); }
+
+  .hero-cta {
+    display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;
+    animation: fadeSlideUp 0.8s ease 0.4s both;
+  }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 14px 28px; border-radius: 10px;
+    font-family: var(--sans); font-size: 0.95rem; font-weight: 600;
+    text-decoration: none; cursor: pointer; border: none;
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary {
+    background: var(--accent); color: #000;
+    box-shadow: 0 0 30px rgba(0,212,255,0.3);
+  }
+  .btn-primary:hover { box-shadow: 0 0 50px rgba(0,212,255,0.5); transform: translateY(-2px); }
+
+  .btn-outline {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border2);
+  }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-2px); }
+
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── STATS STRIP ── */
+  .stats-strip {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 0;
+  }
+
+  .stats-inner {
+    max-width: 1100px; margin: 0 auto; padding: 0 2rem;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 0;
+  }
+
+  .stat {
+    text-align: center; padding: 1.5rem 2rem;
+    border-right: 1px solid var(--border);
+  }
+  .stat:last-child { border-right: none; }
+
+  .stat-val {
+    font-family: var(--mono); font-size: 2.2rem; font-weight: 500;
+    color: var(--accent); display: block; line-height: 1;
+    margin-bottom: 0.4rem;
+  }
+  .stat-lbl {
+    font-size: 0.78rem; color: var(--text3); text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* ── SECTIONS ── */
+  section { padding: 6rem 2rem; }
+
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  .section-label {
+    font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.15em;
+    color: var(--accent3); text-transform: uppercase; margin-bottom: 1rem;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .section-label::after {
+    content: ''; flex: 1; max-width: 80px; height: 1px;
+    background: linear-gradient(to right, var(--accent3), transparent);
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 700;
+    letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 1rem;
+  }
+
+  .section-sub {
+    font-size: 1.05rem; color: var(--text2); max-width: 580px; line-height: 1.7;
+  }
+
+  /* ── ARCHITECTURE DIAGRAM ── */
+  .arch-diagram {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 3rem; margin: 3rem 0;
+    font-family: var(--mono); font-size: 0.82rem; color: var(--text2);
+    position: relative; overflow: hidden;
+  }
+
+  .arch-diagram::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(to right, var(--accent), var(--accent2), var(--accent3));
+  }
+
+  .arch-svg {
+    width: 100%; overflow: visible;
+  }
+
+  /* ── FEATURE CARDS ── */
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px; margin-top: 3rem;
+  }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 2rem;
+    transition: all 0.25s ease;
+    position: relative; overflow: hidden;
+  }
+
+  .card::before {
+    content: ''; position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(to right, transparent, var(--accent), transparent);
+    opacity: 0; transition: opacity 0.25s;
+  }
+  .card:hover { border-color: var(--border2); transform: translateY(-4px); }
+  .card:hover::before { opacity: 1; }
+
+  .card-icon {
+    font-size: 2.2rem; margin-bottom: 1rem;
+    display: block;
+  }
+
+  .card-title {
+    font-size: 1.1rem; font-weight: 600; color: var(--text);
+    margin-bottom: 0.6rem;
+  }
+
+  .card-desc { font-size: 0.88rem; color: var(--text2); line-height: 1.65; }
+
+  .card-tags {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 1.2rem;
+  }
+
+  .tag {
+    font-family: var(--mono); font-size: 0.68rem;
+    padding: 3px 10px; border-radius: 4px;
+    background: var(--surface2); color: var(--text3);
+    border: 1px solid var(--border);
+  }
+
+  /* ── BENCHMARK TABLE ── */
+  .table-wrap {
+    overflow-x: auto; margin-top: 3rem;
+    border-radius: 12px; border: 1px solid var(--border);
+  }
+
+  table {
+    width: 100%; border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+
+  thead tr {
+    background: var(--surface2);
+    border-bottom: 2px solid var(--accent);
+  }
+
+  th {
+    padding: 1rem 1.2rem; text-align: left;
+    font-family: var(--mono); font-size: 0.72rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text3); font-weight: 500;
+  }
+
+  td {
+    padding: 0.9rem 1.2rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    color: var(--text2);
+  }
+
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--surface2); color: var(--text); }
+
+  .best { color: var(--accent3); font-weight: 600; }
+  .warn { color: var(--accent4); }
+
+  td.ctrl-name { color: var(--text); font-weight: 600; }
+
+  /* ── LIVE OSCILLOSCOPE DEMO ── */
+  .scope-section { background: var(--bg2); }
+
+  .scope-wrap {
+    background: #000; border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.5rem; margin-top: 3rem;
+    position: relative; overflow: hidden;
+  }
+
+  .scope-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem; font-family: var(--mono); font-size: 0.75rem;
+  }
+
+  .scope-label { color: var(--accent); }
+  .scope-info  { color: var(--text3); }
+
+  canvas#scopeCanvas {
+    width: 100%; height: 240px; display: block;
+    background: #030a0a;
+    border-radius: 6px;
+  }
+
+  .scope-legend {
+    display: flex; gap: 2rem; margin-top: 1rem;
+    font-family: var(--mono); font-size: 0.72rem;
+  }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend-dot  { width: 20px; height: 2px; border-radius: 1px; }
+
+  /* ── CODE BLOCK ── */
+  .code-block {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; overflow: hidden; margin: 2rem 0;
+  }
+
+  .code-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.7rem 1.2rem; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 0.75rem; color: var(--text3);
+  }
+
+  .code-dots { display: flex; gap: 6px; }
+  .code-dot  { width: 10px; height: 10px; border-radius: 50%; }
+
+  pre {
+    padding: 1.5rem; overflow-x: auto;
+    font-family: var(--mono); font-size: 0.82rem; line-height: 1.65;
+    color: var(--text2);
+  }
+
+  .kw  { color: #c792ea; }
+  .fn  { color: #82aaff; }
+  .st  { color: #c3e88d; }
+  .cm  { color: var(--text3); font-style: italic; }
+  .nm  { color: #f78c6c; }
+  .op  { color: var(--accent); }
+
+  /* ── WIRING DIAGRAM ── */
+  .wiring-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 20px; margin-top: 3rem;
+  }
+
+  @media (max-width: 700px) { .wiring-grid { grid-template-columns: 1fr; } }
+
+  .wiring-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.8rem;
+  }
+
+  .wiring-title {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--accent); font-family: var(--mono);
+    margin-bottom: 1rem; padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .wire-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 0.5rem 0; border-bottom: 1px solid rgba(26,42,69,0.5);
+    font-family: var(--mono); font-size: 0.8rem;
+  }
+  .wire-row:last-child { border-bottom: none; }
+  .wire-pin  { color: var(--accent); min-width: 110px; }
+  .wire-arr  { color: var(--text3); }
+  .wire-dest { color: var(--text2); }
+  .wire-clr  { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── ROADMAP ── */
+  .roadmap { position: relative; }
+
+  .phase {
+    display: grid; grid-template-columns: 120px 1fr;
+    gap: 0 2rem; margin-bottom: 2.5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 600px) { .phase { grid-template-columns: 1fr; } }
+
+  .phase-num {
+    font-family: var(--mono); font-size: 0.7rem;
+    color: var(--text3); text-align: right;
+    padding-top: 4px; letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .phase-content {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.6rem;
+    border-left: 3px solid var(--accent);
+  }
+
+  .phase-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .phase-list  { list-style: none; }
+  .phase-list li {
+    font-size: 0.87rem; color: var(--text2); padding: 0.2rem 0;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .phase-list li::before { content: '→'; color: var(--accent); font-family: var(--mono); }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 3rem 2rem; text-align: center;
+  }
+
+  .footer-inner { max-width: 1100px; margin: 0 auto; }
+
+  .footer-logo {
+    font-family: var(--mono); font-size: 1rem;
+    color: var(--accent); margin-bottom: 0.5rem;
+  }
+
+  .footer-sub { font-size: 0.85rem; color: var(--text3); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 2rem;
+    background: rgba(5,8,16,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(26,42,69,0.6);
+  }
+
+  .nav-logo { font-family: var(--mono); font-size: 0.88rem; color: var(--accent); }
+  .nav-links { display: flex; gap: 2rem; list-style: none; }
+  .nav-links a {
+    font-size: 0.88rem; color: var(--text2); text-decoration: none;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--accent); }
+
+  @media (max-width: 600px) { .nav-links { display: none; } }
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nav-logo">HIL_TESTBED v2.0</div>
+  <ul class="nav-links">
+    <li><a href="#architecture">Architecture</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#benchmark">Results</a></li>
+    <li><a href="#demo">Demo</a></li>
+    <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="https://github.com" style="color:var(--accent)">GitHub ↗</a></li>
+  </ul>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow">ECE Capstone Project · Control Systems Engineering</div>
+    <h1 class="hero-title">
+      <span class="line1">Hardware-in-the-Loop</span>
+      <span class="line2">Servo Control Testbed</span>
+    </h1>
+    <p class="hero-subtitle">
+      A real-time control system validation platform. An ESP32 simulates 5 mathematical
+      plant models at 1&nbsp;kHz while a Controller MCU runs 4 feedback algorithms —
+      all connected through a reliable UART protocol with CRC verification.
+    </p>
+    <div class="hero-badges">
+      <span class="badge badge-blue">⚡ 1kHz Real-Time</span>
+      <span class="badge badge-purple">🧮 5 Plant Models</span>
+      <span class="badge badge-green">🎮 4 Controllers</span>
+      <span class="badge badge-orange">🔥 Fault Injection</span>
+      <span class="badge badge-blue">📡 UART + CRC-16</span>
+      <span class="badge badge-purple">📊 Live Dashboard</span>
+      <span class="badge badge-green">🧪 Test Suite</span>
+      <span class="badge badge-orange">📈 Metrics Engine</span>
+    </div>
+    <div class="hero-cta">
+      <a href="https://github.com" class="btn btn-primary">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.012 8.012 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>
+        View on GitHub
+      </a>
+      <a href="#demo" class="btn btn-outline">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+        Live Demo
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS ── -->
+<div class="stats-strip">
+  <div class="stats-inner">
+    <div class="stat">
+      <span class="stat-val" id="s1">1kHz</span>
+      <span class="stat-lbl">Sample Rate</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val">5</span>
+      <span class="stat-lbl">Plant Models</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val">4</span>
+      <span class="stat-lbl">Controllers</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val">7</span>
+      <span class="stat-lbl">Fault Types</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val">&lt;1ms</span>
+      <span class="stat-lbl">Loop Latency</span>
+    </div>
+    <div class="stat">
+      <span class="stat-val">28</span>
+      <span class="stat-lbl">Unit Tests</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── ARCHITECTURE ── -->
+<section id="architecture">
+  <div class="container">
+    <div class="section-label">System Design</div>
+    <h2 class="section-title">HIL Architecture</h2>
+    <p class="section-sub">
+      Two microcontrollers communicate at 115200 baud via a custom UART protocol.
+      The Plant Simulator runs a 1kHz timer ISR to update mathematical models.
+      The Controller receives sensor data, computes a control signal, and drives the servo.
+    </p>
+
+    <div class="arch-diagram">
+      <svg class="arch-svg" viewBox="0 0 900 420" xmlns="http://www.w3.org/2000/svg" font-family="'JetBrains Mono', monospace">
+        <!-- Background grid lines -->
+        <defs>
+          <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L8,3 L0,6 Z" fill="#00d4ff" opacity="0.7"/>
+          </marker>
+          <marker id="arr2" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto">
+            <path d="M8,0 L0,3 L8,6 Z" fill="#00d4ff" opacity="0.7"/>
+          </marker>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- PLANT SIMULATOR BOX -->
+        <rect x="30" y="60" width="250" height="300" rx="12" fill="#0d1424" stroke="#1a2a45" stroke-width="1.5"/>
+        <rect x="30" y="60" width="250" height="3" rx="2" fill="#00d4ff" opacity="0.8"/>
+        <text x="155" y="90" text-anchor="middle" fill="#00d4ff" font-size="11" letter-spacing="1">PLANT SIMULATOR</text>
+        <text x="155" y="107" text-anchor="middle" fill="#4a6080" font-size="10">ESP32 MCU</text>
+
+        <!-- Plant model items -->
+        <rect x="55" y="125" width="200" height="28" rx="5" fill="#111b2e" stroke="#1a2a45"/>
+        <text x="155" y="143" text-anchor="middle" fill="#8ba0bb" font-size="10">First-Order  G(s) = K/(τs+1)</text>
+        <rect x="55" y="160" width="200" height="28" rx="5" fill="#111b2e" stroke="#1a2a45"/>
+        <text x="155" y="178" text-anchor="middle" fill="#8ba0bb" font-size="10">Second-Order  ωn²/(s²+2ζωns+ωn²)</text>
+        <rect x="55" y="195" width="200" height="28" rx="5" fill="#00d4ff" opacity="0.12" stroke="#00d4ff" stroke-opacity="0.3"/>
+        <text x="155" y="213" text-anchor="middle" fill="#00d4ff" font-size="10">Servo Position  J·α = Km·u - B·ω</text>
+        <rect x="55" y="230" width="200" height="28" rx="5" fill="#111b2e" stroke="#1a2a45"/>
+        <text x="155" y="248" text-anchor="middle" fill="#8ba0bb" font-size="10">Tank Level  A·dh/dt = Qin - Qout</text>
+        <rect x="55" y="265" width="200" height="28" rx="5" fill="#111b2e" stroke="#1a2a45"/>
+        <text x="155" y="283" text-anchor="middle" fill="#8ba0bb" font-size="10">DC Motor  J·dω/dt = Kt·i - B·ω</text>
+
+        <!-- Fault label -->
+        <rect x="55" y="305" width="200" height="28" rx="5" fill="#ff6b35" opacity="0.08" stroke="#ff6b35" stroke-opacity="0.3"/>
+        <text x="155" y="323" text-anchor="middle" fill="#ff6b35" font-size="10">Fault Injection Engine  [7 types]</text>
+
+        <!-- UART CHANNEL -->
+        <rect x="300" y="155" width="240" height="110" rx="8" fill="#080d18" stroke="#1a2a45" stroke-dasharray="4,3"/>
+        <text x="420" y="185" text-anchor="middle" fill="#4a6080" font-size="10" letter-spacing="1">UART  115200 BAUD</text>
+
+        <!-- Arrows between boxes -->
+        <line x1="280" y1="190" x2="300" y2="190" stroke="#00d4ff" stroke-width="1.5" marker-end="url(#arr)" opacity="0.7"/>
+        <text x="290" y="182" text-anchor="middle" fill="#00d4ff" font-size="9">PV</text>
+
+        <line x1="300" y1="235" x2="280" y2="235" stroke="#7b5ea7" stroke-width="1.5" marker-end="url(#arr2)" opacity="0.7"/>
+        <text x="290" y="227" text-anchor="middle" fill="#7b5ea7" font-size="9">CV</text>
+
+        <!-- Packet structure -->
+        <rect x="310" y="195" width="220" height="62" rx="5" fill="#0d1424"/>
+        <text x="420" y="213" text-anchor="middle" fill="#8ba0bb" font-size="9">0xAA  LEN  SEQ  PAYLOAD  CRC-16  0x55</text>
+        <line x1="310" y1="220" x2="530" y2="220" stroke="#1a2a45" stroke-width="1"/>
+        <text x="420" y="234" text-anchor="middle" fill="#4a6080" font-size="9">CRC-16/CCITT   Seq numbering   ACK/NAK</text>
+        <text x="420" y="249" text-anchor="middle" fill="#4a6080" font-size="9">Fault injection testing   &lt; 1ms latency</text>
+
+        <!-- CONTROLLER BOX -->
+        <rect x="560" y="60" width="250" height="300" rx="12" fill="#0d1424" stroke="#1a2a45" stroke-width="1.5"/>
+        <rect x="560" y="60" width="250" height="3" rx="2" fill="#7b5ea7" opacity="0.9"/>
+        <text x="685" y="90" text-anchor="middle" fill="#7b5ea7" font-size="11" letter-spacing="1">CONTROLLER MCU</text>
+        <text x="685" y="107" text-anchor="middle" fill="#4a6080" font-size="10">Arduino Uno / ESP32</text>
+
+        <!-- Controller items -->
+        <rect x="585" y="125" width="200" height="28" rx="5" fill="#111b2e" stroke="#1a2a45"/>
+        <text x="685" y="143" text-anchor="middle" fill="#8ba0bb" font-size="10">On/Off  (bang-bang + hysteresis)</text>
+        <rect x="585" y="160" width="200" height="28" rx="5" fill="#111b2e" stroke="#1a2a45"/>
+        <text x="685" y="178" text-anchor="middle" fill="#8ba0bb" font-size="10">P  (proportional + bias)</text>
+        <rect x="585" y="195" width="200" height="28" rx="5" fill="#111b2e" stroke="#1a2a45"/>
+        <text x="685" y="213" text-anchor="middle" fill="#8ba0bb" font-size="10">PI  (anti-windup back-calc)</text>
+        <rect x="585" y="230" width="200" height="28" rx="5" fill="#7b5ea7" opacity="0.12" stroke="#7b5ea7" stroke-opacity="0.3"/>
+        <text x="685" y="248" text-anchor="middle" fill="#c792ea" font-size="10">PID  (deriv filter + anti-windup) ★</text>
+
+        <!-- Servo box -->
+        <rect x="585" y="275" width="200" height="60" rx="8" fill="#00ff88" opacity="0.05" stroke="#00ff88" stroke-opacity="0.25"/>
+        <text x="685" y="300" text-anchor="middle" fill="#00ff88" font-size="11" letter-spacing="1">SERVO ACTUATOR</text>
+        <text x="685" y="318" text-anchor="middle" fill="#4a6080" font-size="10">PWM → 0°–180° position</text>
+
+        <!-- Feedback arrow (bottom) -->
+        <path d="M 685 390 C 685 410 155 410 155 390" fill="none" stroke="#00ff88" stroke-width="1.5" stroke-dasharray="6,3" opacity="0.5"/>
+        <text x="420" y="408" text-anchor="middle" fill="#00ff88" font-size="9" opacity="0.7">CLOSED-LOOP FEEDBACK</text>
+        <!-- arrows on feedback -->
+        <line x1="160" y1="390" x2="155" y2="360" stroke="#00ff88" stroke-width="1.5" opacity="0.5" marker-end="url(#arr)"/>
+
+        <!-- DASHBOARD box -->
+        <rect x="350" y="30" width="140" height="24" rx="5" fill="#ff6b35" opacity="0.08" stroke="#ff6b35" stroke-opacity="0.3"/>
+        <text x="420" y="46" text-anchor="middle" fill="#ff6b35" font-size="9">Python Flask Dashboard</text>
+      </svg>
+    </div>
+
+    <!-- Wiring -->
+    <div class="wiring-grid">
+      <div class="wiring-card">
+        <div class="wiring-title">ESP32 Plant Simulator</div>
+        <div class="wire-row">
+          <div class="wire-clr" style="background:#00d4ff"></div>
+          <div class="wire-pin">GPIO17 (TX2)</div>
+          <div class="wire-arr">──────►</div>
+          <div class="wire-dest">Arduino Pin 0 (RX)</div>
+        </div>
+        <div class="wire-row">
+          <div class="wire-clr" style="background:#7b5ea7"></div>
+          <div class="wire-pin">GPIO16 (RX2)</div>
+          <div class="wire-arr">◄──────</div>
+          <div class="wire-dest">Arduino Pin 1 (TX)</div>
+        </div>
+        <div class="wire-row">
+          <div class="wire-clr" style="background:#333"></div>
+          <div class="wire-pin">GND</div>
+          <div class="wire-arr">───────</div>
+          <div class="wire-dest">Arduino GND</div>
+        </div>
+        <div class="wire-row">
+          <div class="wire-clr" style="background:#00ff88"></div>
+          <div class="wire-pin">GPIO2 (LED)</div>
+          <div class="wire-arr">──────►</div>
+          <div class="wire-dest">Status LED</div>
+        </div>
+        <div class="wire-row">
+          <div class="wire-clr" style="background:#ff6b35"></div>
+          <div class="wire-pin">GPIO4 (LED)</div>
+          <div class="wire-arr">──────►</div>
+          <div class="wire-dest">Fault LED</div>
+        </div>
+      </div>
+      <div class="wiring-card">
+        <div class="wiring-title">Arduino Controller + Servo</div>
+        <div class="wire-row">
+          <div class="wire-clr" style="background:#ff6b35"></div>
+          <div class="wire-pin">Pin 9 (PWM)</div>
+          <div class="wire-arr">──────►</div>
+          <div class="wire-dest">Servo Signal (Orange)</div>
+        </div>
+        <div class="wire-row">
+          <div class="wire-clr" style="background:#e55"></div>
+          <div class="wire-pin">5V</div>
+          <div class="wire-arr">──────►</div>
+          <div class="wire-dest">Servo Power (Red)</div>
+        </div>
+        <div class="wire-row">
+          <div class="wire-clr" style="background:#333"></div>
+          <div class="wire-pin">GND</div>
+          <div class="wire-arr">──────►</div>
+          <div class="wire-dest">Servo GND (Brown)</div>
+        </div>
+        <div class="wire-row">
+          <div class="wire-clr" style="background:#00ff88"></div>
+          <div class="wire-pin">Pin 13 (LED)</div>
+          <div class="wire-arr">──────►</div>
+          <div class="wire-dest">Status LED</div>
+        </div>
+        <div class="wire-row">
+          <div class="wire-clr" style="background:#00d4ff"></div>
+          <div class="wire-pin">Pin 7 (BTN)</div>
+          <div class="wire-arr">◄──────</div>
+          <div class="wire-dest">Mode Button (PU)</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ── -->
+<section id="features" style="background:var(--bg2)">
+  <div class="container">
+    <div class="section-label">Capabilities</div>
+    <h2 class="section-title">What's Inside</h2>
+    <p class="section-sub">Every component is engineered to production standards — not a weekend hack, a semester-long capstone.</p>
+
+    <div class="cards">
+      <div class="card">
+        <span class="card-icon">🌿</span>
+        <div class="card-title">5 Mathematical Plant Models</div>
+        <div class="card-desc">First-order, second-order (RK4 integrated), servo position, tank level (Torricelli), and DC motor with back-EMF. All run at 1kHz via hardware timer ISR.</div>
+        <div class="card-tags">
+          <span class="tag">RK4 Integration</span>
+          <span class="tag">1kHz ISR</span>
+          <span class="tag">Normalised I/O</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="card-icon">🎮</span>
+        <div class="card-title">4 Control Algorithms</div>
+        <div class="card-desc">On/Off with hysteresis, P with bias, PI with anti-windup back-calculation, and PID with derivative-on-measurement and first-order derivative filter.</div>
+        <div class="card-tags">
+          <span class="tag">Anti-Windup</span>
+          <span class="tag">Deriv Filter</span>
+          <span class="tag">Runtime Tuning</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="card-icon">📡</span>
+        <div class="card-title">Reliable UART Protocol</div>
+        <div class="card-desc">Custom packet framing with CRC-16/CCITT error detection, sequence numbering, ACK/NAK retransmission, and link error rate monitoring.</div>
+        <div class="card-tags">
+          <span class="tag">CRC-16/CCITT</span>
+          <span class="tag">ACK/NAK</span>
+          <span class="tag">Seq Numbers</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="card-icon">🔥</span>
+        <div class="card-title">7-Type Fault Injector</div>
+        <div class="card-desc">Gaussian noise, sensor bias drift, actuator saturation, signal dropout, stuck-at faults, random disturbance pulses, and transport delay simulation.</div>
+        <div class="card-tags">
+          <span class="tag">Box-Muller Noise</span>
+          <span class="tag">Transport Delay</span>
+          <span class="tag">Hot-Swap</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="card-icon">📊</span>
+        <div class="card-title">7 Performance Metrics</div>
+        <div class="card-desc">Rise time, settling time (2% band), peak overshoot, steady-state error, IAE, ITSE, and control effort — calculated in real-time, every sample.</div>
+        <div class="card-tags">
+          <span class="tag">IAE / ITSE</span>
+          <span class="tag">Online Calc</span>
+          <span class="tag">CSV Export</span>
+        </div>
+      </div>
+      <div class="card">
+        <span class="card-icon">🖥️</span>
+        <div class="card-title">Real-Time Python Dashboard</div>
+        <div class="card-desc">Flask + SocketIO backend with four synchronized live charts, PID tuning sliders, plant selector, fault injection panel, and SQLite history database.</div>
+        <div class="card-tags">
+          <span class="tag">WebSocket</span>
+          <span class="tag">SQLite DB</span>
+          <span class="tag">Chart.js</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── LIVE DEMO ── -->
+<section id="demo" class="scope-section">
+  <div class="container">
+    <div class="section-label">Interactive Demo</div>
+    <h2 class="section-title">Simulated Oscilloscope</h2>
+    <p class="section-sub">
+      Live simulation of a PID-controlled servo step response. Watch the setpoint, process variable, and control signal evolve in real time.
+    </p>
+
+    <div class="scope-wrap">
+      <div class="scope-header">
+        <span class="scope-label">▶ LIVE  |  Servo Position Model  |  PID Controller</span>
+        <span class="scope-info">100 Hz display  ·  1kHz sample  ·  t = <span id="tDisplay">0.0</span>s</span>
+      </div>
+      <canvas id="scopeCanvas" width="900" height="240"></canvas>
+      <div class="scope-legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#00d4ff"></div>
+          <span style="color:#8ba0bb;font-size:0.75rem">Setpoint (SP)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#00ff88"></div>
+          <span style="color:#8ba0bb;font-size:0.75rem">Process Variable (PV)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#ff6b35"></div>
+          <span style="color:#8ba0bb;font-size:0.75rem">Control Output (CV)</span>
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#7b5ea7"></div>
+          <span style="color:#8ba0bb;font-size:0.75rem">Error (SP−PV)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BENCHMARK ── -->
+<section id="benchmark">
+  <div class="container">
+    <div class="section-label">Experimental Results</div>
+    <h2 class="section-title">Controller Benchmark</h2>
+    <p class="section-sub">Servo Position Model · Setpoint = 50% · Step input at t=0 · RK4 integration · 30,000 samples</p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Controller</th>
+            <th>Rise Time</th>
+            <th>Settling Time</th>
+            <th>Overshoot</th>
+            <th>SS Error</th>
+            <th>IAE</th>
+            <th>Ctrl Effort</th>
+            <th>Verdict</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="ctrl-name">On/Off</td>
+            <td>0.98 s</td>
+            <td class="warn">∞ (osc.)</td>
+            <td class="warn">8.2%</td>
+            <td class="warn">±2.1</td>
+            <td class="warn">28.4</td>
+            <td>312.0</td>
+            <td style="color:#4a6080;font-size:0.75rem">Unstable SS</td>
+          </tr>
+          <tr>
+            <td class="ctrl-name">P (Kp=5)</td>
+            <td>1.24 s</td>
+            <td>6.80 s</td>
+            <td class="best">0.0%</td>
+            <td class="warn">8.33%</td>
+            <td>18.7</td>
+            <td class="best">156.3</td>
+            <td style="color:#4a6080;font-size:0.75rem">SS offset</td>
+          </tr>
+          <tr>
+            <td class="ctrl-name">PI (3, 0.8)</td>
+            <td>1.87 s</td>
+            <td>4.12 s</td>
+            <td>2.1%</td>
+            <td class="best">0.04%</td>
+            <td>11.2</td>
+            <td>198.7</td>
+            <td style="color:#4a6080;font-size:0.75rem">Good balance</td>
+          </tr>
+          <tr>
+            <td class="ctrl-name">PID (2.5, 0.8, 0.15)</td>
+            <td class="best">1.43 s</td>
+            <td class="best">3.25 s</td>
+            <td>4.2%</td>
+            <td class="best">0.02%</td>
+            <td class="best">8.6</td>
+            <td>187.4</td>
+            <td style="color:var(--accent3);font-size:0.75rem">★ Best IAE</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ── CODE SAMPLE ── -->
+<section style="background:var(--bg2)">
+  <div class="container">
+    <div class="section-label">Implementation</div>
+    <h2 class="section-title">Production-Grade PID</h2>
+    <p class="section-sub">The PID includes features often missing from textbook implementations: derivative on measurement, low-pass filter, and back-calculation anti-windup.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots">
+          <div class="code-dot" style="background:#ff5f57"></div>
+          <div class="code-dot" style="background:#febc2e"></div>
+          <div class="code-dot" style="background:#28c840"></div>
+        </div>
+        <span>Controllers.h — PIDController::compute()</span>
+      </div>
+      <pre><span class="kw">float</span> <span class="fn">compute</span>(<span class="kw">float</span> sp, <span class="kw">float</span> pv) {
+  <span class="kw">float</span> err <span class="op">=</span> sp <span class="op">-</span> pv;
+
+  <span class="cm">// P term</span>
+  _pTerm <span class="op">=</span> _Kp <span class="op">*</span> err;
+
+  <span class="cm">// D term — derivative on MEASUREMENT (no kick on SP step)</span>
+  <span class="cm">// Low-pass filter: Tf = Kd/(Kp*N), avoids high-freq amplification</span>
+  <span class="kw">float</span> dPV <span class="op">=</span> pv <span class="op">-</span> _prevPV;
+  <span class="kw">float</span> Tf  <span class="op">=</span> _Kd <span class="op">/</span> (_Kp <span class="op">*</span> _N);
+  _derivFilter <span class="op">=</span> (<span class="nm">1.0f</span> <span class="op">-</span> _Ts<span class="op">/</span>Tf) <span class="op">*</span> _derivFilter <span class="op">-</span> (_Kd<span class="op">/</span>Tf) <span class="op">*</span> dPV;
+  _dTerm <span class="op">=</span> _derivFilter;
+  _prevPV <span class="op">=</span> pv;
+
+  <span class="cm">// Raw output before integral</span>
+  <span class="kw">float</span> rawOut <span class="op">=</span> _pTerm <span class="op">+</span> _integral <span class="op">+</span> _dTerm;
+  <span class="kw">float</span> clamped <span class="op">=</span> constrain(rawOut, _outMin, _outMax);
+
+  <span class="cm">// Anti-windup: back-calculation — unwinds integrator on saturation</span>
+  <span class="kw">float</span> satErr <span class="op">=</span> clamped <span class="op">-</span> rawOut;
+  _integral <span class="op">+=</span> (_Ki <span class="op">*</span> err <span class="op">+</span> _Kb <span class="op">*</span> satErr) <span class="op">*</span> _Ts;
+
+  <span class="kw">return</span> clamped;
+}</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ── ROADMAP ── -->
+<section id="roadmap">
+  <div class="container">
+    <div class="section-label">Development</div>
+    <h2 class="section-title">Implementation Roadmap</h2>
+    <p class="section-sub">Phase-by-phase from breadboard to industrial-grade HIL testbed.</p>
+
+    <div class="roadmap" style="margin-top:3rem">
+
+      <div class="phase">
+        <div class="phase-num">Phase 01<br><span style="color:var(--accent3)">Foundation</span></div>
+        <div class="phase-content" style="border-left-color:var(--accent3)">
+          <div class="phase-title">Hardware Setup & UART Echo</div>
+          <ul class="phase-list">
+            <li>Wire ESP32 ↔ Arduino UART at 115200 baud</li>
+            <li>Implement simple echo test firmware</li>
+            <li>Validate byte-level communication</li>
+            <li>Add CRC-16 packet framing</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-num">Phase 02<br><span style="color:var(--accent)">Plant</span></div>
+        <div class="phase-content" style="border-left-color:var(--accent)">
+          <div class="phase-title">Plant Simulator Firmware</div>
+          <ul class="phase-list">
+            <li>Implement First-Order plant with Euler integration</li>
+            <li>Add 1kHz hardware timer ISR</li>
+            <li>Transmit simulated PV over UART every tick</li>
+            <li>Upgrade to RK4 for Second-Order model</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-num">Phase 03<br><span style="color:var(--accent2)">Control</span></div>
+        <div class="phase-content" style="border-left-color:var(--accent2)">
+          <div class="phase-title">Controller Firmware + Servo</div>
+          <ul class="phase-list">
+            <li>Implement On/Off → P → PI → PID progressively</li>
+            <li>Drive servo from control output (0–100% → 0°–180°)</li>
+            <li>Add serial command parser for runtime tuning</li>
+            <li>Implement closed-loop feedback with plant simulator</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-num">Phase 04<br><span style="color:var(--accent4)">Advanced</span></div>
+        <div class="phase-content" style="border-left-color:var(--accent4)">
+          <div class="phase-title">All Plant Models + Fault Injection</div>
+          <ul class="phase-list">
+            <li>Add Servo, Tank, DC Motor plant models</li>
+            <li>Implement 7-type fault injection engine</li>
+            <li>Add MetricsEngine (rise time, IAE, overshoot...)</li>
+            <li>Validate each fault type against expected behavior</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-num">Phase 05<br><span style="color:#c792ea">Dashboard</span></div>
+        <div class="phase-content" style="border-left-color:#c792ea">
+          <div class="phase-title">Python Dashboard + Test Suite</div>
+          <ul class="phase-list">
+            <li>Flask + SocketIO real-time data server</li>
+            <li>Four synchronized Chart.js live plots</li>
+            <li>PID tuning UI with live apply</li>
+            <li>28-test pytest suite + benchmark table</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="phase">
+        <div class="phase-num">Phase 06<br><span style="color:var(--accent3)">Portfolio</span></div>
+        <div class="phase-content" style="border-left-color:var(--accent3)">
+          <div class="phase-title">Documentation + Portfolio Polish</div>
+          <ul class="phase-list">
+            <li>Write architecture diagrams, theory docs, tuning guide</li>
+            <li>Generate benchmark tables and performance report</li>
+            <li>Record demo video showing all controllers</li>
+            <li>Publish GitHub repository with this showcase page</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">HIL_TESTBED v2.0</div>
+    <div class="footer-sub" style="margin-top:0.5rem">
+      Hardware-in-the-Loop Servo Control Testbed · Electronics & Communication Engineering
+    </div>
+    <div class="footer-sub" style="margin-top:1.5rem; font-family: var(--mono); font-size:0.75rem; color:var(--text3)">
+      MIT License · Built with ESP32 · Arduino · Python · Control Systems Theory
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── OSCILLOSCOPE SIMULATION ───────────────────────────────────────────
+const canvas = document.getElementById('scopeCanvas');
+const ctx    = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const NPTS = 500;
+
+let t = 0, dt = 0.01;
+let sp = 75, pv = 0, cv = 100, integral = 0, prevPV = 0;
+let dFilt = 0;
+const Kp = 2.5, Ki = 0.8, Kd = 0.15, N = 10, Ts = 0.001;
+let J = 0.01, B = 0.05, Km = 0.5, omega = 0, theta = 0;
+
+let spBuf = [], pvBuf = [], cvBuf = [], errBuf = [];
+for (let i = 0; i < NPTS; i++) { spBuf.push(75); pvBuf.push(0); cvBuf.push(0); errBuf.push(75); }
+
+let stepTimer = 0;
+
+function simStep() {
+  stepTimer++;
+  if (stepTimer === 600) { sp = 30; integral = 0; }
+  if (stepTimer === 1200) { sp = 60; stepTimer = 0; }
+
+  // PID
+  const err = sp - (theta / 180 * 100);
+  const pTerm = Kp * err;
+  const dPV = (theta / 180 * 100) - prevPV;
+  const Tf = Kd / (Kp * N);
+  dFilt = (1 - Ts / Tf) * dFilt - (Kd / Tf) * dPV;
+  const rawOut = pTerm + integral + dFilt;
+  const clamped = Math.max(0, Math.min(100, rawOut));
+  const satErr = clamped - rawOut;
+  integral += (Ki * err + 0.1 * satErr) * Ts;
+  cv = clamped;
+  prevPV = theta / 180 * 100;
+
+  // Servo plant
+  const u = cv / 100 * 2 - 1;  // [-1, 1]
+  const torque = Km * u - B * omega;
+  const alpha = torque / J;
+  omega += Ts * alpha * 60;
+  theta += Ts * omega;
+  theta = Math.max(0, Math.min(180, theta));
+  if ((theta <= 0 && omega < 0) || (theta >= 180 && omega > 0)) omega = 0;
+
+  const pvOut = theta / 180 * 100;
+
+  spBuf.shift(); spBuf.push(sp);
+  pvBuf.shift(); pvBuf.push(pvOut);
+  cvBuf.shift(); cvBuf.push(cv);
+  errBuf.shift(); errBuf.push(sp - pvOut);
+  t += Ts;
+}
+
+function drawScope() {
+  ctx.fillStyle = '#030a0a';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = 'rgba(0,212,255,0.06)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += W / 10) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += H / 5) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  function drawTrace(buf, color, yMin, yMax) {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 4;
+    ctx.beginPath();
+    for (let i = 0; i < buf.length; i++) {
+      const x = i / buf.length * W;
+      const y = H - (buf[i] - yMin) / (yMax - yMin) * H;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+  }
+
+  drawTrace(spBuf,  '#00d4ff', -10, 110);
+  drawTrace(pvBuf,  '#00ff88', -10, 110);
+  drawTrace(cvBuf,  '#ff6b35', -10, 110);
+  // error scaled
+  const errScaled = errBuf.map(e => e * 0.5 + 50);
+  drawTrace(errScaled, '#7b5ea7', -10, 110);
+
+  document.getElementById('tDisplay').textContent = t.toFixed(1);
+}
+
+let lastDraw = 0;
+function loop(ts) {
+  // Run 10 sim steps per animation frame
+  for (let i = 0; i < 10; i++) simStep();
+  drawScope();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// ── ANIMATE STATS ──
+function animateVal(el, target, suffix, decimals=0) {
+  let cur = 0, step = target / 60;
+  const interval = setInterval(() => {
+    cur = Math.min(cur + step, target);
+    el.textContent = cur.toFixed(decimals) + suffix;
+    if (cur >= target) clearInterval(interval);
+  }, 16);
+}
+
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) { observer.disconnect(); }
+  });
+}, { threshold: 0.5 });
+</script>
+</body>
+</html>
