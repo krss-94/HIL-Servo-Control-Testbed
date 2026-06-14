@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="docs/diagrams/banner.png" alt="HIL Testbed Banner" width="100%">
+<img src="diagrams/banner.png" alt="HIL Testbed Banner" width="100%">
 
 # ⚡ Hardware-in-the-Loop Servo Control Testbed
 
