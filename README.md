@@ -13,7 +13,7 @@
 [![Platform: Arduino](https://img.shields.io/badge/Platform-Arduino-00979D?style=for-the-badge&logo=arduino)](https://www.arduino.cc/)
 [![Python: 3.10+](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![Control: PID](https://img.shields.io/badge/Control-PID_·_PI_·_P_·_OnOff-7B2FBE?style=for-the-badge)](firmware/controller/)
-[![Status: Production](https://img.shields.io/badge/STATUS-ACTIVE-DEVELOPMENT-00ff88?style=for-the-badge)]()
+![Status](https://img.shields.io/badge/STATUS-ACTIVE_DEVELOPMENT-00ff88?style=for-the-badge)
 
 <br>
 
