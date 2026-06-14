@@ -1,45 +1,6 @@
 <div align="center">
-<div align="center">
 
-# ⚡ Hardware-in-the-Loop Servo Control Testbed
-
-### Real-Time Control Systems Validation • Embedded Engineering • Industrial Automation
-
-![ESP32](https://img.shields.io/badge/ESP32-E7352C?style=for-the-badge)
-![Arduino](https://img.shields.io/badge/Arduino-00979D?style=for-the-badge)
-![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge)
-![MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
-
-![PID](https://img.shields.io/badge/Control-PID%20%7C%20PI%20%7C%20P%20%7C%20ON--OFF-purple?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Production%20Grade-brightgreen?style=for-the-badge)
-
-</div>
-
----
-
-`
-       ┌─────────────────────┐
-       │  Arduino Controller │
-       │ P / PI / PID Logic  │
-       └──────────┬──────────┘
-                  │ UART
-                  ▼
-       ┌─────────────────────┐
-       │  ESP32 Plant Model  │
-       │ First & Second Order│
-       └──────────┬──────────┘
-                  │
-                  ▼
-       ┌─────────────────────┐
-       │ Fault Injection Lab │
-       │ Benchmark Engine    │
-       └──────────┬──────────┘
-                  │
-                  ▼
-       ┌─────────────────────┐
-       │ Live Dashboard      │
-       │ Performance Metrics │
-       └─────────────────────┘
+<img src="docs/diagrams/banner.svg" alt="HIL Testbed Banner" width="100%">
 
 # ⚡ Hardware-in-the-Loop Servo Control Testbed
 
@@ -84,7 +45,7 @@ a real-time **mathematical model of a physical plant** on one microcontroller (t
 it is talking to the real world — receiving sensor values and sending actuator commands
 exactly as it would in production.
 
-
+```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                    HARDWARE-IN-THE-LOOP ARCHITECTURE                     │
 │                                                                           │
