@@ -17,7 +17,7 @@
 
 ---
 
-```text
+`
        ┌─────────────────────┐
        │  Arduino Controller │
        │ P / PI / PID Logic  │
@@ -84,7 +84,7 @@ a real-time **mathematical model of a physical plant** on one microcontroller (t
 it is talking to the real world — receiving sensor values and sending actuator commands
 exactly as it would in production.
 
-```
+
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                    HARDWARE-IN-THE-LOOP ARCHITECTURE                     │
 │                                                                           │
